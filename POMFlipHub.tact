@@ -4,22 +4,22 @@
 import "@stdlib/deploy";
 
 // Operation codes
-const OP_CREATE = 0x01;
-const OP_JOIN = 0x02;
-const OP_REVEAL = 0x03;
-const OP_CANCEL = 0x04;
-const OP_CLAIM_FORFEIT = 0x05;
+const OP_CREATE: Int = 0x01;
+const OP_JOIN: Int = 0x02;
+const OP_REVEAL: Int = 0x03;
+const OP_CANCEL: Int = 0x04;
+const OP_CLAIM_FORFEIT: Int = 0x05;
 
 // Match states
-const STATE_CREATED = 0;
-const STATE_JOINED = 1;
-const STATE_REVEALING = 2;
-const STATE_RESOLVED = 3;
-const STATE_CANCELLED = 4;
+const STATE_CREATED: Int = 0;
+const STATE_JOINED: Int = 1;
+const STATE_REVEALING: Int = 2;
+const STATE_RESOLVED: Int = 3;
+const STATE_CANCELLED: Int = 4;
 
 // Timeouts (in seconds)
-const JOIN_TTL = 300;    // 5 minutes to join
-const REVEAL_TTL = 180;  // 3 minutes to reveal
+const JOIN_TTL: Int = 300;    // 5 minutes to join
+const REVEAL_TTL: Int = 180;  // 3 minutes to reveal
 
 struct Match {
     amount: Int;           // Bet amount in nanoTON
