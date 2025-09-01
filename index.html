@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>POM Flip — Telegram</title>
+<title>POM Flip — PvP Betting</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
     --bg:#0b0f1a; --card:#121830; --ink:#e8f1ff; --muted:#a9b8ff;
     --btn:#1b2243; --btn2:#16203c; --ok:#0fd17b; --warn:#ffb65e;
-    --ring: rgba(110,227,255,.25);
+    --ring: rgba(110,227,255,.25); --pom:#ff6b35; --gold:#ffd700;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -26,6 +26,45 @@
     background:var(--card); border:1px solid rgba(110,227,255,.15);
     border-radius:16px; padding:14px 14px 12px;
   }
+
+  /* Mode Selection */
+  .mode-selector{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+  .mode-btn{ 
+    padding:12px; border:none; border-radius:12px; font-weight:700; font-size:14px;
+    background:var(--btn); color:var(--ink); cursor:pointer; transition:all 0.2s;
+  }
+  .mode-btn.active{ background:var(--pom); color:#fff; }
+  .mode-btn:hover{ filter:brightness(1.1); }
+
+  /* PvP Interface */
+  .pvp-section{ display:none; }
+  .pvp-section.active{ display:block; }
+  
+  .bet-selector{ margin:12px 0; }
+  .bet-amounts{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+  .bet-btn{
+    padding:10px; border:none; border-radius:8px; font-weight:700; font-size:13px;
+    background:var(--btn2); color:var(--ink); cursor:pointer; transition:all 0.2s;
+  }
+  .bet-btn.active{ background:var(--pom); color:#fff; }
+  .bet-btn:hover{ filter:brightness(1.1); }
+  
+  .pom-balance{ 
+    text-align:center; margin:8px 0; padding:8px; background:rgba(255,107,53,.1);
+    border-radius:8px; border:1px solid var(--pom); color:var(--pom); font-weight:700;
+  }
+
+  /* Game Room */
+  .game-room{ display:none; }
+  .game-room.active{ display:block; }
+  
+  .players{ display:flex; justify-content:space-between; margin:12px 0; }
+  .player{ text-align:center; flex:1; }
+  .player-name{ font-weight:700; font-size:14px; }
+  .player-bet{ color:var(--pom); font-size:12px; margin-top:2px; }
+  .player-choice{ margin-top:8px; font-size:20px; }
+  
+  .vs{ display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; color:var(--muted); }
 
   /* Coin */
   .stage{ perspective:1000px; display:flex; justify-content:center; margin:6px 0 10px; }
@@ -62,18 +101,25 @@
     transition:opacity .18s ease, transform .18s ease;
   }
   .toast.show{ opacity:1; transform:translateY(0) }
-  .ok{ color:var(--ok) } .warn{ color:var(--warn) }
+  .ok{ color:var(--ok) } .warn{ color:var(--warn) } .pom{ color:var(--pom) }
   footer{ margin-top:10px; text-align:center; color:var(--muted); font-size:12px; opacity:.9 }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="head">
-      <div class="title">POM Flip</div>
+      <div class="title">POM Flip PvP</div>
       <div class="sub">Heads = Bark 🐕 · Tails = Bite 🦴</div>
     </div>
 
-    <div class="card">
+    <!-- Mode Selection -->
+    <div class="mode-selector">
+      <button class="mode-btn active" onclick="setMode('solo')">Solo</button>
+      <button class="mode-btn" onclick="setMode('pvp')">PvP Bet</button>
+    </div>
+
+    <!-- Solo Mode -->
+    <div id="soloMode" class="card">
       <div class="stage">
         <div id="coin" class="coin" aria-live="polite">
           <div class="face front" aria-label="Heads">🐕</div>
@@ -92,7 +138,67 @@
       </div>
     </div>
 
-    <footer>Designed for Telegram • fast, readable, simple</footer>
+    <!-- PvP Mode -->
+    <div id="pvpMode" class="pvp-section">
+      <div class="card">
+        <div class="pom-balance">
+          💰 POM Balance: <span id="pomBalance">1000</span> POM
+        </div>
+        
+        <div class="bet-selector">
+          <div style="font-size:14px; font-weight:700; margin-bottom:8px;">Mise:</div>
+          <div class="bet-amounts">
+            <button class="bet-btn" onclick="setBet(10)">10 POM</button>
+            <button class="bet-btn" onclick="setBet(50)">50 POM</button>
+            <button class="bet-btn" onclick="setBet(100)">100 POM</button>
+            <button class="bet-btn" onclick="setBet(250)">250 POM</button>
+            <button class="bet-btn" onclick="setBet(500)">500 POM</button>
+            <button class="bet-btn" onclick="setBet(1000)">1000 POM</button>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="findMatch" onclick="findMatch()">🔍 Trouver un adversaire</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Room -->
+    <div id="gameRoom" class="game-room">
+      <div class="card">
+        <div class="players">
+          <div class="player">
+            <div class="player-name" id="player1Name">Vous</div>
+            <div class="player-bet" id="player1Bet">0 POM</div>
+            <div class="player-choice" id="player1Choice">—</div>
+          </div>
+          <div class="vs">VS</div>
+          <div class="player">
+            <div class="player-name" id="player2Name">Adversaire</div>
+            <div class="player-bet" id="player2Bet">0 POM</div>
+            <div class="player-choice" id="player2Choice">—</div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div id="pvpCoin" class="coin" aria-live="polite">
+            <div class="face front" aria-label="Heads">🐕</div>
+            <div class="face back" aria-label="Tails">🦴</div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="pvpBtnH" onclick="makeChoice('heads')">Heads (Bark 🐕)</button>
+          <button id="pvpBtnT" class="b2" onclick="makeChoice('tails')">Tails (Bite 🦴)</button>
+        </div>
+
+        <div id="gameStatus" style="text-align:center; margin-top:10px; font-weight:700; color:var(--muted);">
+          En attente d'un adversaire...
+        </div>
+      </div>
+    </div>
+
+    <footer>POM Flip PvP • Misez vos POM et gagnez!</footer>
   </div>
 
   <div id="toast" class="toast">—</div>
@@ -103,6 +209,23 @@
   if (tg){ tg.ready(); tg.expand(); }
   const haptic = (t='light')=>{ try{ tg?.HapticFeedback?.impactOccurred(t) }catch(e){} };
 
+  // --- Game State ---
+  let currentMode = 'solo';
+  let currentBet = 0;
+  let pomBalance = parseInt(localStorage.getItem('pom_balance') || '1000', 10);
+  let gameState = 'waiting'; // waiting, choosing, flipping, result
+  let myChoice = null;
+  let opponentChoice = null;
+  let gameResult = null;
+
+  // --- Solo Mode Variables ---
+  let score = parseInt(localStorage.getItem('pomflip_score')||'0',10);
+  let day = localStorage.getItem('pomflip_day')||'';
+  let streak = parseInt(localStorage.getItem('pomflip_streak')||'0',10);
+  let busy = false;
+  let spinIndex = 0;
+  let pending = null;
+
   // --- Elements ---
   const coin = document.getElementById('coin');
   const btnH = document.getElementById('btnH');
@@ -110,15 +233,154 @@
   const scoreEl = document.getElementById('score');
   const streakEl = document.getElementById('streak');
   const toast = document.getElementById('toast');
+  const pomBalanceEl = document.getElementById('pomBalance');
 
-  // --- State ---
-  let score = parseInt(localStorage.getItem('pomflip_score')||'0',10);
-  let day = localStorage.getItem('pomflip_day')||'';
-  let streak = parseInt(localStorage.getItem('pomflip_streak')||'0',10);
-  let busy = false;
-  let spinIndex = 0;          // force une nouvelle transform à chaque fois
-  let pending = null;         // {choice, outcome}
+  // --- Mode Management ---
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.getElementById('soloMode').style.display = mode === 'solo' ? 'block' : 'none';
+    document.getElementById('pvpMode').style.display = mode === 'pvp' ? 'block' : 'none';
+    document.getElementById('gameRoom').classList.toggle('active', false);
+    
+    if (mode === 'pvp') {
+      updatePomBalance();
+    }
+  }
 
+  // --- PvP Functions ---
+  function setBet(amount) {
+    if (amount > pomBalance) {
+      toastMsg('💰 Pas assez de POM!', 'warn');
+      return;
+    }
+    currentBet = amount;
+    document.querySelectorAll('.bet-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    toastMsg(`Mise: ${amount} POM`, 'pom');
+  }
+
+  function findMatch() {
+    if (currentBet === 0) {
+      toastMsg('💰 Choisissez une mise d\'abord!', 'warn');
+      return;
+    }
+    
+    // Simuler la recherche d'adversaire
+    toastMsg('🔍 Recherche d\'adversaire...', '');
+    setTimeout(() => {
+      startPvPGame();
+    }, 2000);
+  }
+
+  function startPvPGame() {
+    document.getElementById('pvpMode').style.display = 'none';
+    document.getElementById('gameRoom').classList.add('active');
+    
+    // Simuler un adversaire
+    const opponentName = `Player${Math.floor(Math.random() * 1000)}`;
+    document.getElementById('player1Bet').textContent = `${currentBet} POM`;
+    document.getElementById('player2Bet').textContent = `${currentBet} POM`;
+    document.getElementById('player2Name').textContent = opponentName;
+    document.getElementById('gameStatus').textContent = 'Choisissez votre côté!';
+    
+    gameState = 'choosing';
+    haptic('medium');
+    toastMsg(`🎮 Match trouvé! Mise: ${currentBet} POM`, 'ok');
+  }
+
+  function makeChoice(choice) {
+    if (gameState !== 'choosing') return;
+    
+    myChoice = choice;
+    document.getElementById('player1Choice').textContent = choice === 'heads' ? '🐕' : '🦴';
+    document.getElementById('pvpBtnH').disabled = true;
+    document.getElementById('pvpBtnT').disabled = true;
+    
+    // Simuler le choix de l'adversaire
+    setTimeout(() => {
+      opponentChoice = Math.random() < 0.5 ? 'heads' : 'tails';
+      document.getElementById('player2Choice').textContent = opponentChoice === 'heads' ? '🐕' : '🦴';
+      document.getElementById('gameStatus').textContent = 'Lancement de la pièce...';
+      
+      setTimeout(() => {
+        flipPvPCoin();
+      }, 1000);
+    }, 1500);
+    
+    haptic('light');
+  }
+
+  function flipPvPCoin() {
+    gameState = 'flipping';
+    const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+    
+    // Animation de la pièce
+    const pvpCoin = document.getElementById('pvpCoin');
+    spinIndex++;
+    const baseTurns = 2 + Math.floor(Math.random()*2);
+    const tilt = (Math.random()*10 - 5);
+    const finalRotation = outcome === 'tails' ? 180 : 0;
+    const deg = baseTurns*180 + finalRotation + spinIndex*360;
+    
+    pvpCoin.style.transition = 'transform 900ms cubic-bezier(.22,.8,.2,1)';
+    void pvpCoin.offsetWidth;
+    pvpCoin.style.transform = `rotateY(${deg}deg) rotateZ(${tilt}deg)`;
+    
+    // Résultat après animation
+    pvpCoin.addEventListener('transitionend', function resultHandler(e) {
+      if (e.propertyName !== 'transform') return;
+      pvpCoin.removeEventListener('transitionend', resultHandler);
+      
+      const iWon = (myChoice === outcome);
+      const result = iWon ? 'VICTOIRE!' : 'DÉFAITE';
+      const color = iWon ? 'ok' : 'warn';
+      
+      if (iWon) {
+        pomBalance += currentBet * 2; // Gagne le double de la mise
+        haptic('heavy');
+        toastMsg(`🎉 ${result}! +${currentBet * 2} POM`, 'ok');
+      } else {
+        pomBalance -= currentBet; // Perd la mise
+        haptic('light');
+        toastMsg(`😔 ${result}! -${currentBet} POM`, 'warn');
+      }
+      
+      document.getElementById('gameStatus').textContent = `${result} - ${outcome === 'heads' ? 'HEADS' : 'TAILS'}`;
+      updatePomBalance();
+      savePomBalance();
+      
+      // Retour au menu après 3 secondes
+      setTimeout(() => {
+        document.getElementById('gameRoom').classList.remove('active');
+        document.getElementById('pvpMode').style.display = 'block';
+        resetPvPGame();
+      }, 3000);
+    });
+  }
+
+  function resetPvPGame() {
+    gameState = 'waiting';
+    myChoice = null;
+    opponentChoice = null;
+    document.getElementById('player1Choice').textContent = '—';
+    document.getElementById('player2Choice').textContent = '—';
+    document.getElementById('pvpBtnH').disabled = false;
+    document.getElementById('pvpBtnT').disabled = false;
+    document.getElementById('gameStatus').textContent = 'En attente d\'un adversaire...';
+  }
+
+  function updatePomBalance() {
+    pomBalanceEl.textContent = pomBalance;
+  }
+
+  function savePomBalance() {
+    localStorage.setItem('pom_balance', String(pomBalance));
+  }
+
+  // --- Solo Mode Functions (existing) ---
   function today(){
     const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
   }
@@ -153,16 +415,13 @@
   function setBusy(v){ busy=v; btnH.disabled=v; btnT.disabled=v; }
 
   function spinTo(finalSide){ // 'heads' | 'tails'
-    // ajoute 360°*spinIndex pour garantir une transition à chaque flip
     spinIndex++;
-    const baseTurns = 2 + Math.floor(Math.random()*2); // 2..3 tours
+    const baseTurns = 2 + Math.floor(Math.random()*2);
     const tilt = (Math.random()*10 - 5);
-    // Correction: pour que 'tails' soit visible, on doit avoir un nombre impair de demi-tours (180°)
-    // Pour que 'heads' soit visible, on doit avoir un nombre pair de demi-tours
     const finalRotation = finalSide === 'tails' ? 180 : 0;
     const deg = baseTurns*180 + finalRotation + spinIndex*360;
     coin.style.transition = 'transform 900ms cubic-bezier(.22,.8,.2,1)';
-    void coin.offsetWidth; // reflow reset
+    void coin.offsetWidth;
     coin.style.transform = `rotateY(${deg}deg) rotateZ(${tilt}deg)`;
   }
 
@@ -198,6 +457,9 @@
 
   btnH.addEventListener('click', ()=>flip('heads'));
   btnT.addEventListener('click', ()=>flip('tails'));
+
+  // Initialize
+  updatePomBalance();
 </script>
 </body>
 </html>
