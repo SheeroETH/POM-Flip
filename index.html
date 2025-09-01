@@ -157,7 +157,10 @@
     spinIndex++;
     const baseTurns = 2 + Math.floor(Math.random()*2); // 2..3 tours
     const tilt = (Math.random()*10 - 5);
-    const deg = baseTurns*180 + (finalSide==='tails'?180:0) + spinIndex*360;
+    // Correction: pour que 'tails' soit visible, on doit avoir un nombre impair de demi-tours (180°)
+    // Pour que 'heads' soit visible, on doit avoir un nombre pair de demi-tours
+    const finalRotation = finalSide === 'tails' ? 180 : 0;
+    const deg = baseTurns*180 + finalRotation + spinIndex*360;
     coin.style.transition = 'transform 900ms cubic-bezier(.22,.8,.2,1)';
     void coin.offsetWidth; // reflow reset
     coin.style.transform = `rotateY(${deg}deg) rotateZ(${tilt}deg)`;
