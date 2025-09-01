@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
+  <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>POM Flip — PvP Betting</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script type="module" src="./ton-utils.js"></script>
-<style>
+  <style>
   :root{
     --bg:#0b0f1a; --card:#121830; --ink:#e8f1ff; --muted:#a9b8ff;
     --btn:#1b2243; --btn2:#16203c; --ok:#0fd17b; --warn:#ffb65e;
@@ -103,8 +103,40 @@
   }
   .toast.show{ opacity:1; transform:translateY(0) }
   .ok{ color:var(--ok) } .warn{ color:var(--warn) } .pom{ color:var(--pom) }
+  
+  /* Match List Styles */
+  .match-item{
+    display:flex; align-items:center; padding:12px; margin-bottom:8px;
+    background:var(--btn2); border-radius:10px; border:1px solid rgba(110,227,255,.1);
+    transition:all 0.2s;
+  }
+  .match-item:hover{ background:var(--btn); transform:translateY(-1px); }
+  .match-rounds{ 
+    width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--pom); color:#fff; font-weight:800; font-size:14px; margin-right:12px;
+  }
+  .match-bet{ 
+    flex:1; display:flex; align-items:center; gap:8px;
+  }
+  .bet-amount{ font-weight:700; color:var(--pom); }
+  .match-players{ 
+    display:flex; align-items:center; gap:4px; margin-right:12px;
+  }
+  .player-slot{ 
+    width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--ok); color:#fff; font-size:12px; font-weight:700;
+  }
+  .player-slot.empty{ background:var(--muted); }
+  .match-actions{ display:flex; gap:6px; }
+  .action-btn{ 
+    padding:6px 10px; border:none; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;
+    background:var(--btn); color:var(--ink); transition:all 0.2s;
+  }
+  .action-btn.primary{ background:var(--pom); color:#fff; }
+  .action-btn:hover{ filter:brightness(1.1); }
+  
   footer{ margin-top:10px; text-align:center; color:var(--muted); font-size:12px; opacity:.9 }
-</style>
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -147,20 +179,46 @@
           💰 POM Balance: <span id="pomBalance">1000</span> POM
         </div>
         
-        <div class="bet-selector">
-          <div style="font-size:14px; font-weight:700; margin-bottom:8px;">Mise:</div>
-          <div class="bet-amounts">
-            <button class="bet-btn" onclick="setBet(10)">10 POM</button>
-            <button class="bet-btn" onclick="setBet(50)">50 POM</button>
-            <button class="bet-btn" onclick="setBet(100)">100 POM</button>
-            <button class="bet-btn" onclick="setBet(250)">250 POM</button>
-            <button class="bet-btn" onclick="setBet(500)">500 POM</button>
-            <button class="bet-btn" onclick="setBet(1000)">1000 POM</button>
-          </div>
+        <!-- Match List Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:16px 0 12px;">
+          <h3 style="margin:0; font-size:16px; font-weight:700;">🎮 Matchs Actifs</h3>
+          <button onclick="showCreateMatch()" style="padding:8px 12px; background:var(--pom); color:#fff; border:none; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer;">
+            ➕ Créer
+          </button>
         </div>
 
-        <div class="buttons">
-          <button id="findMatch" onclick="findMatch()">🔍 Trouver un adversaire</button>
+        <!-- Search Bar -->
+        <div style="margin-bottom:12px;">
+          <input type="text" id="matchSearch" placeholder="🔍 Rechercher un match..." style="width:100%; padding:10px; border:none; border-radius:8px; background:var(--btn2); color:var(--ink); font-size:14px;">
+        </div>
+
+        <!-- Match List -->
+        <div id="matchList" style="max-height:300px; overflow-y:auto;">
+          <!-- Matches will be populated here -->
+        </div>
+
+        <!-- Create Match Interface -->
+        <div id="createMatchInterface" style="display:none;">
+          <div style="text-align:center; margin-bottom:16px; font-weight:700; color:var(--pom);">
+            🎮 Créer un Match
+          </div>
+          
+          <div class="bet-selector">
+            <div style="font-size:14px; font-weight:700; margin-bottom:8px;">Mise (POM):</div>
+            <div class="bet-amounts">
+              <button class="bet-btn" onclick="setCreateBet(10)">10 POM</button>
+              <button class="bet-btn" onclick="setCreateBet(50)">50 POM</button>
+              <button class="bet-btn" onclick="setCreateBet(100)">100 POM</button>
+              <button class="bet-btn" onclick="setCreateBet(250)">250 POM</button>
+              <button class="bet-btn" onclick="setCreateBet(500)">500 POM</button>
+              <button class="bet-btn" onclick="setCreateBet(1000)">1000 POM</button>
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button onclick="createNewMatch()">🚀 Créer le Match</button>
+            <button onclick="hideCreateMatch()" class="b2">❌ Annuler</button>
+          </div>
         </div>
       </div>
     </div>
@@ -202,7 +260,7 @@
 
     <!-- On-Chain Mode -->
     <div id="onchainMode" class="pvp-section">
-      <div class="card">
+  <div class="card">
         <div id="walletStatus" style="text-align:center; margin-bottom:16px; padding:12px; background:rgba(255,107,53,.1); border-radius:8px; border:1px solid var(--pom);">
           <div id="walletAddress" style="color:var(--pom); font-weight:700;">Connectez votre wallet TON</div>
           <button id="connectWallet" onclick="connectTONWallet()" style="margin-top:8px; padding:8px 16px; background:var(--pom); color:#fff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">
@@ -292,7 +350,7 @@
 
   <div id="toast" class="toast">—</div>
 
-<script>
+  <script>
   // --- Telegram integration ---
   const tg = window.Telegram?.WebApp;
   if (tg){ tg.ready(); tg.expand(); }
@@ -319,7 +377,7 @@
   const coin = document.getElementById('coin');
   const btnH = document.getElementById('btnH');
   const btnT = document.getElementById('btnT');
-  const scoreEl = document.getElementById('score');
+    const scoreEl = document.getElementById('score');
   const streakEl = document.getElementById('streak');
   const toast = document.getElementById('toast');
   const pomBalanceEl = document.getElementById('pomBalance');
@@ -337,50 +395,152 @@
     
     if (mode === 'pvp') {
       updatePomBalance();
+      initializeMatches();
     } else if (mode === 'onchain') {
       checkWalletConnection();
     }
   }
 
-  // --- PvP Functions ---
-  function setBet(amount) {
+  // --- PvP Match System ---
+  let activeMatches = [];
+  let createBet = 0;
+
+  // Initialize with some sample matches
+  function initializeMatches() {
+    activeMatches = [
+      { id: 1, bet: 50, players: 1, maxPlayers: 2, creator: "Player1", status: "waiting" },
+      { id: 2, bet: 100, players: 2, maxPlayers: 2, creator: "Player2", status: "full" },
+      { id: 3, bet: 250, players: 1, maxPlayers: 2, creator: "Player3", status: "waiting" },
+      { id: 4, bet: 500, players: 1, maxPlayers: 2, creator: "Player4", status: "waiting" },
+      { id: 5, bet: 1000, players: 2, maxPlayers: 2, creator: "Player5", status: "full" }
+    ];
+    renderMatchList();
+  }
+
+  function renderMatchList() {
+    const matchList = document.getElementById('matchList');
+    const searchTerm = document.getElementById('matchSearch').value.toLowerCase();
+    
+    const filteredMatches = activeMatches.filter(match => 
+      match.bet.toString().includes(searchTerm) || 
+      match.creator.toLowerCase().includes(searchTerm)
+    );
+
+    matchList.innerHTML = filteredMatches.map(match => `
+      <div class="match-item">
+        <div class="match-rounds">${match.players}/${match.maxPlayers}</div>
+        <div class="match-bet">
+          <span class="bet-amount">${match.bet} POM</span>
+        </div>
+        <div class="match-players">
+          ${Array.from({length: match.maxPlayers}, (_, i) => 
+            `<div class="player-slot ${i < match.players ? '' : 'empty'}">${i < match.players ? '👤' : '+'}</div>`
+          ).join('')}
+        </div>
+        <div class="match-actions">
+          <button class="action-btn" onclick="watchMatch(${match.id})">👁️ Regarder</button>
+          ${match.status === 'waiting' ? 
+            `<button class="action-btn primary" onclick="joinMatch(${match.id})">🚀 Rejoindre</button>` :
+            `<button class="action-btn" disabled>Complet</button>`
+          }
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function showCreateMatch() {
+    document.getElementById('createMatchInterface').style.display = 'block';
+    document.getElementById('matchList').style.display = 'none';
+    document.getElementById('matchSearch').style.display = 'none';
+  }
+
+  function hideCreateMatch() {
+    document.getElementById('createMatchInterface').style.display = 'none';
+    document.getElementById('matchList').style.display = 'block';
+    document.getElementById('matchSearch').style.display = 'block';
+  }
+
+  function setCreateBet(amount) {
     if (amount > pomBalance) {
       toastMsg('💰 Pas assez de POM!', 'warn');
       return;
     }
-    currentBet = amount;
-    document.querySelectorAll('.bet-btn').forEach(btn => btn.classList.remove('active'));
+    createBet = amount;
+    document.querySelectorAll('#createMatchInterface .bet-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     toastMsg(`Mise: ${amount} POM`, 'pom');
   }
 
-  function findMatch() {
-    if (currentBet === 0) {
+  function createNewMatch() {
+    if (createBet === 0) {
       toastMsg('💰 Choisissez une mise d\'abord!', 'warn');
       return;
     }
+
+    const newMatch = {
+      id: Date.now(),
+      bet: createBet,
+      players: 1,
+      maxPlayers: 2,
+      creator: "Vous",
+      status: "waiting"
+    };
+
+    activeMatches.unshift(newMatch);
+    renderMatchList();
+    hideCreateMatch();
     
-    // Simuler la recherche d'adversaire
-    toastMsg('🔍 Recherche d\'adversaire...', '');
-    setTimeout(() => {
-      startPvPGame();
-    }, 2000);
+    toastMsg(`🎮 Match créé! Mise: ${createBet} POM`, 'ok');
+    haptic('medium');
   }
 
-  function startPvPGame() {
+  function joinMatch(matchId) {
+    const match = activeMatches.find(m => m.id === matchId);
+    if (!match || match.status !== 'waiting') {
+      toastMsg('❌ Match non disponible', 'warn');
+      return;
+    }
+
+    if (match.bet > pomBalance) {
+      toastMsg('💰 Pas assez de POM pour rejoindre!', 'warn');
+      return;
+    }
+
+    // Simulate joining
+    match.players++;
+    match.status = match.players >= match.maxPlayers ? 'full' : 'waiting';
+    
+    renderMatchList();
+    toastMsg(`🚀 Match rejoint! Mise: ${match.bet} POM`, 'ok');
+    
+    // Start the game
+    setTimeout(() => {
+      startPvPGame(match);
+    }, 1000);
+  }
+
+  function watchMatch(matchId) {
+    const match = activeMatches.find(m => m.id === matchId);
+    if (match) {
+      toastMsg(`👁️ Observation du match ${matchId}`, '');
+      // In a real app, you'd show the match in spectator mode
+    }
+  }
+
+  function startPvPGame(match) {
     document.getElementById('pvpMode').style.display = 'none';
     document.getElementById('gameRoom').classList.add('active');
     
     // Simuler un adversaire
     const opponentName = `Player${Math.floor(Math.random() * 1000)}`;
-    document.getElementById('player1Bet').textContent = `${currentBet} POM`;
-    document.getElementById('player2Bet').textContent = `${currentBet} POM`;
+    document.getElementById('player1Bet').textContent = `${match.bet} POM`;
+    document.getElementById('player2Bet').textContent = `${match.bet} POM`;
     document.getElementById('player2Name').textContent = opponentName;
     document.getElementById('gameStatus').textContent = 'Choisissez votre côté!';
     
     gameState = 'choosing';
     haptic('medium');
-    toastMsg(`🎮 Match trouvé! Mise: ${currentBet} POM`, 'ok');
+    toastMsg(`🎮 Match démarré! Mise: ${match.bet} POM`, 'ok');
   }
 
   function makeChoice(choice) {
@@ -407,7 +567,7 @@
 
   function flipPvPCoin() {
     gameState = 'flipping';
-    const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+      const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
     
     // Animation de la pièce
     const pvpCoin = document.getElementById('pvpCoin');
@@ -836,6 +996,16 @@
 
   // Initialize
   updatePomBalance();
-</script>
+  
+  // Initialize PvP matches when PvP mode is selected
+  document.getElementById('matchSearch').addEventListener('input', renderMatchList);
+  
+  // Initialize matches when page loads
+  setTimeout(() => {
+    if (currentMode === 'pvp') {
+      initializeMatches();
+    }
+  }, 100);
+  </script>
 </body>
 </html>
