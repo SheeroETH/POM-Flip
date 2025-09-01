@@ -1,326 +1,183 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>POM Flip — Bark or Bite</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>POM Flip — Telegram</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0b0f1a; --card:#121830; --ink:#e8f1ff; --muted:#a9b8ff;
+    --accent:#6ee3ff; --accent2:#4effa3; --ok:#0fd17b; --warn:#ffb65e;
+    --btn:#1b2243; --btn2:#16203c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background:var(--bg); color:var(--ink); display:flex; align-items:center; justify-content:center;
+    padding:16px; -webkit-tap-highlight-color: transparent;
+  }
+  .wrap{ width:100%; max-width:420px; }
+  .head{
+    text-align:center; margin-bottom:10px;
+  }
+  .title{ font-weight:800; font-size:18px; letter-spacing:.2px; }
+  .sub{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .card{
+    background:var(--card); border:1px solid rgba(110,227,255,.15);
+    border-radius:16px; padding:14px 14px 12px;
+  }
 
-  <!-- Telegram WebApp SDK (pour haptique + thème) -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  /* Coin minimal */
+  .stage{ perspective:1000px; display:flex; justify-content:center; margin:6px 0 10px; }
+  .coin{
+    width:132px; height:132px; border-radius:50%;
+    position:relative; transform-style:preserve-3d;
+    background: radial-gradient(65% 50% at 50% 35%, #1d2752 0%, #0f1531 70%);
+    box-shadow: inset 0 0 18px rgba(255,255,255,.06), 0 10px 28px rgba(0,0,0,.35);
+    border:1px solid rgba(110,227,255,.25);
+    transition: transform 900ms cubic-bezier(.22,.8,.2,1);
+  }
+  .coin::before{ content:""; position:absolute; inset:8px; border-radius:50%; border:1px dashed rgba(110,227,255,.25); }
+  .face{ position:absolute; inset:0; display:grid; place-items:center; font-size:44px; backface-visibility:hidden; user-select:none; }
+  .front{ transform: translateZ(2px); }
+  .back { transform: rotateY(180deg) translateZ(2px); }
 
-  <style>
-    :root{
-      --bg1:#0b0f1a; --bg2:#101734; --card:#141b3a;
-      --accent:#6ee3ff; --accent2:#48ff9b; --text:#eaf2ff; --muted:#9db0ff;
-      --glow: 0 0 32px rgba(110, 227, 255, .25), 0 0 64px rgba(72,255,155,.15);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family: ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;
-      color:var(--text);
-      background: radial-gradient(1000px 700px at 20% 10%, #182150 0%, transparent 60%),
-                  radial-gradient(800px 600px at 80% 90%, #112644 0%, transparent 55%),
-                  linear-gradient(180deg, var(--bg1), var(--bg2));
-      display:flex; align-items:center; justify-content:center; padding:24px;
-    }
-    .wrap{ width:100%; max-width:480px; }
+  .buttons{ display:grid; gap:10px; margin-top:8px; }
+  button{
+    height:54px; border:none; border-radius:12px; font-weight:800; font-size:16px; letter-spacing:.2px;
+    background:var(--btn); color:#eaf3ff; box-shadow:0 6px 16px rgba(0,0,0,.24);
+    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+  }
+  .b2{ background:var(--btn2); }
+  button:active{ transform:translateY(1px) }
+  button[disabled]{ opacity:.6; cursor:not-allowed; }
 
-    .logo{
-      display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:18px;
-      text-shadow: var(--glow);
-    }
-    .logo .badge{
-      width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
-      background: linear-gradient(135deg, rgba(110,227,255,.15), rgba(72,255,155,.10));
-      border:1px solid rgba(110,227,255,.25);
-      box-shadow: var(--glow);
-      font-size:22px;
-    }
-    h1{ margin:0; font-weight:800; letter-spacing:.5px; font-size:22px; }
-    .sub{ color:var(--muted); margin-top:6px; text-align:center; }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border:1px solid rgba(110,227,255,.18);
-      border-radius:20px; padding:20px; margin-top:16px;
-      box-shadow: var(--glow); backdrop-filter: blur(6px);
-    }
-
-    /* COIN AREA */
-    .stage{ perspective: 1200px; display:flex; justify-content:center; margin:14px 0 8px; }
-    .coin{
-      width:160px; height:160px; border-radius:50%;
-      position:relative; transform-style:preserve-3d;
-      transition: transform 1.2s cubic-bezier(.2,.7,.2,1);
-      box-shadow:
-        inset 0 0 25px rgba(255,255,255,.05),
-        0 16px 40px rgba(0,0,0,.35),
-        var(--glow);
-      background: radial-gradient(120px 80px at 50% 35%, rgba(255,255,255,.12), rgba(255,255,255,.04)),
-                  linear-gradient(180deg, #1a2147, #0e1534);
-      border:2px solid rgba(110,227,255,.35);
-    }
-    .face{
-      position:absolute; inset:0; display:grid; place-items:center;
-      border-radius:50%;
-      backface-visibility:hidden;
-      font-size:56px; user-select:none;
-      text-shadow: 0 4px 16px rgba(0,0,0,.35);
-    }
-    .face.front{ transform: translateZ(3px); }
-    .face.back { transform: rotateY(180deg) translateZ(3px); }
-
-    /* coin rim */
-    .coin::before{
-      content:""; position:absolute; inset:5px; border-radius:50%;
-      border:2px dashed rgba(110,227,255,.25);
-    }
-    .coin::after{
-      content:""; position:absolute; inset:-2px; border-radius:50%;
-      border:2px solid rgba(72,255,155,.15);
-      box-shadow: inset 0 0 30px rgba(72,255,155,.12);
-    }
-
-    .controls{
-      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 4px;
-    }
-    .btn{
-      padding:14px 16px; border:none; border-radius:14px; cursor:pointer; font-weight:800;
-      color:#06111a;
-      background: linear-gradient(135deg, #8fe9ff, #48ff9b);
-      box-shadow: 0 10px 24px rgba(72,255,155,.25), 0 6px 16px rgba(110,227,255,.20);
-      transition: transform .08s ease, filter .2s ease;
-    }
-    .btn:hover{ filter:brightness(1.05) }
-    .btn:active{ transform: translateY(1px) }
-    .btn.alt{
-      color:#07101a; background: linear-gradient(135deg, #9ad0ff, #78ffa8);
-    }
-    .btn[disabled]{ opacity:.6; cursor:not-allowed; }
-
-    .result{
-      margin-top:10px; background:#0e1430; border:1px solid rgba(110,227,255,.18);
-      border-radius:12px; padding:12px; min-height:46px; display:flex; align-items:center; justify-content:center;
-      color:#dff8ff;
-    }
-    .meta{
-      display:flex; justify-content:space-between; margin-top:10px; color:var(--muted); font-size:13px;
-    }
-    .share{
-      margin-top:10px; text-align:center;
-    }
-    .share a{
-      color:#bfe6ff; text-decoration:none; font-size:14px;
-    }
-
-    /* flare animate on win */
-    .flare{
-      position:absolute; inset: -20px; border-radius:50%;
-      pointer-events:none; mix-blend-mode: screen; opacity:0; filter: blur(14px);
-      background: radial-gradient(120px 120px at 50% 50%, rgba(72,255,155,.55), transparent 60%),
-                  radial-gradient(120px 120px at 40% 30%, rgba(110,227,255,.45), transparent 60%);
-      transition: opacity .5s ease;
-    }
-    .coin.win .flare{ opacity:1; }
-
-    /* Confetti mini */
-    .confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden }
-    .piece{
-      position:absolute; width:8px; height:14px; opacity:0.9;
-      animation: fall linear forwards;
-    }
-    @keyframes fall{
-      to{ transform: translateY(110vh) rotate(720deg); opacity:1; }
-    }
-
-    footer{
-      margin-top:14px; text-align:center; color:var(--muted); font-size:12px;
-      opacity:.9
-    }
-  </style>
+  .info{
+    margin-top:10px; display:flex; justify-content:space-between; font-size:13px; color:var(--muted);
+  }
+  .toast{
+    position:fixed; left:16px; right:16px; bottom: max(16px, env(safe-area-inset-bottom));
+    background:#0e1430; color:#dff6ff; border:1px solid rgba(110,227,255,.18);
+    border-radius:12px; padding:10px 12px; font-weight:700; text-align:center; opacity:0; transform:translateY(8px);
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .toast.show{ opacity:1; transform:translateY(0) }
+  .ok{ color:var(--ok) } .warn{ color:var(--warn) }
+  footer{ margin-top:10px; text-align:center; color:var(--muted); font-size:12px; opacity:.9 }
+</style>
 </head>
 <body>
   <div class="wrap">
-    <div class="logo">
-      <div class="badge">🐶</div>
-      <div>
-        <h1>POM Flip — Bark or Bite</h1>
-        <div class="sub">Heads = <b>Bark 🐕</b> · Tails = <b>Bite 🦴</b></div>
-      </div>
+    <div class="head">
+      <div class="title">POM Flip</div>
+      <div class="sub">Heads = Bark 🐕 · Tails = Bite 🦴</div>
     </div>
 
     <div class="card">
       <div class="stage">
-        <div class="coin" id="coin">
-          <div class="flare"></div>
+        <div id="coin" class="coin">
           <div class="face front" aria-label="Heads">🐕</div>
           <div class="face back" aria-label="Tails">🦴</div>
         </div>
       </div>
 
-      <div class="controls">
-        <button class="btn" id="btnHeads">Heads (Bark 🐕)</button>
-        <button class="btn alt" id="btnTails">Tails (Bite 🦴)</button>
+      <div class="buttons">
+        <button id="btnH">Heads (Bark 🐕)</button>
+        <button id="btnT" class="b2">Tails (Bite 🦴)</button>
       </div>
 
-      <div class="result" id="result">Clique pour lancer le flip…</div>
-
-      <div class="meta">
+      <div class="info">
         <div id="score">Score: 0</div>
-        <div id="streak">Streak: 0🔥</div>
-      </div>
-
-      <div class="share">
-        <a id="shareLink" href="#" target="_blank" rel="noopener">🔗 Inviter un ami</a>
+        <div id="streak">Streak: 0 🔥</div>
       </div>
     </div>
 
-    <footer>Tip: vibration + haptique sur Telegram mobile. Design 3D sans librairie ✨</footer>
+    <footer>Designed for Telegram • fast, readable, simple</footer>
   </div>
 
-  <div class="confetti" id="confetti"></div>
+  <div id="toast" class="toast">—</div>
 
-  <script>
-    // --- Telegram integration (theme + haptics) ---
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready(); tg.expand();
-      if (tg.colorScheme === 'light') {
-        document.body.style.background =
-          'linear-gradient(180deg, #f6fbff, #e9f2ff)';
+<script>
+  // Telegram integration (theme + haptics)
+  const tg = window.Telegram?.WebApp;
+  if (tg){ tg.ready(); tg.expand(); }
+  const haptic = (t='light')=>{ try{ tg?.HapticFeedback?.impactOccurred(t) }catch(e){} };
+
+  // Elements
+  const coin = document.getElementById('coin');
+  const btnH = document.getElementById('btnH');
+  const btnT = document.getElementById('btnT');
+  const scoreEl = document.getElementById('score');
+  const streakEl = document.getElementById('streak');
+  const toast = document.getElementById('toast');
+
+  // State (local)
+  let score = parseInt(localStorage.getItem('pomflip_score')||'0',10);
+  let day = localStorage.getItem('pomflip_day')||'';
+  let streak = parseInt(localStorage.getItem('pomflip_streak')||'0',10);
+  let busy = false;
+
+  const today = (()=>{ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; })();
+
+  function hud(){
+    scoreEl.textContent = `Score: ${score}`;
+    streakEl.textContent = `Streak: ${streak} 🔥`;
+    localStorage.setItem('pomflip_score', String(score));
+    localStorage.setItem('pomflip_streak', String(streak));
+  }
+
+  // Daily bonus minimal (1 pt / jour)
+  if (day !== today){
+    streak = day ? streak+1 : 1;
+    day = today; localStorage.setItem('pomflip_day', today);
+    score += 1; // bonus très léger
+    toastMsg(`🎁 Bonus quotidien +1 pt (streak ${streak})`);
+  }
+  hud();
+
+  function toastMsg(txt, cls=''){
+    toast.className = `toast ${cls} show`;
+    toast.textContent = txt;
+    setTimeout(()=>{ toast.classList.remove('show') }, 1200);
+  }
+
+  function setBusy(v){ busy=v; btnH.disabled=v; btnT.disabled=v; }
+
+  function spin(final){ // final: 'heads'|'tails'
+    const turns = 2 + Math.floor(Math.random()*2); // 2..3 tours
+    const tilt = (Math.random()*10 - 5);
+    const end = final==='heads' ? `rotateY(${turns*180}deg) rotateZ(${tilt}deg)`
+                                : `rotateY(${turns*180+180}deg) rotateZ(${tilt}deg)`;
+    coin.style.transition = 'transform 900ms cubic-bezier(.22,.8,.2,1)';
+    void coin.offsetWidth;
+    coin.style.transform = end;
+  }
+
+  function flip(choice){
+    if(busy) return;
+    setBusy(true); haptic('light');
+
+    const outcome = Math.random()<0.5 ? 'heads':'tails';
+    spin(outcome);
+
+    setTimeout(()=>{
+      const win = (choice===outcome);
+      if (win){
+        score += 2;
+        hud();
+        haptic('medium');
+        toastMsg(`${outcome==='heads'?'🟦 HEADS':'🟩 TAILS'} +2 pts`, 'ok');
+      } else {
+        toastMsg(`${outcome==='heads'?'🟦 HEADS':'🟩 TAILS'} perdu`, 'warn');
       }
-    }
-    const haptic = (type='light')=>{
-      try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type); } catch(e){}
-    }
+      setTimeout(()=>setBusy(false), 250); // petit cooldown
+    }, 930);
+  }
 
-    // --- Elements ---
-    const coinEl = document.getElementById('coin');
-    const resultEl = document.getElementById('result');
-    const scoreEl = document.getElementById('score');
-    const streakEl = document.getElementById('streak');
-    const btnHeads = document.getElementById('btnHeads');
-    const btnTails = document.getElementById('btnTails');
-    const confettiWrap = document.getElementById('confetti');
-    const shareA = document.getElementById('shareLink');
-
-    // --- Local state (simple) ---
-    let score = parseInt(localStorage.getItem('pomflip_score')||'0',10);
-    let lastDay = localStorage.getItem('pomflip_day')||'';
-    let streak = parseInt(localStorage.getItem('pomflip_streak')||'0',10);
-    let busy = false;
-
-    function todayKey(){
-      const d = new Date();
-      return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-    }
-
-    function updateHUD(){
-      scoreEl.textContent = `Score: ${score}`;
-      streakEl.textContent = `Streak: ${streak}🔥`;
-      localStorage.setItem('pomflip_score', String(score));
-      localStorage.setItem('pomflip_streak', String(streak));
-    }
-
-    // Daily streak + bonus (once/day)
-    const today = todayKey();
-    if (lastDay !== today) {
-      streak = lastDay ? streak + 1 : 1;
-      lastDay = today;
-      localStorage.setItem('pomflip_day', today);
-      // daily bonus based on streak tiers:
-      const dailyBonus = Math.min(1 + Math.floor(streak/3), 3);
-      score += dailyBonus;
-      resultEl.textContent = `🎁 Bonus quotidien: +${dailyBonus} pts (streak ${streak}🔥)`;
-    }
-    updateHUD();
-
-    // --- Share link ---
-    const appURL = (typeof location !== 'undefined') ? location.href : 'https://pom-flip.vercel.app';
-    shareA.href = `https://t.me/share/url?url=${encodeURIComponent(appURL)}&text=${encodeURIComponent('Viens jouer à POM Flip 🐶🦴 — Heads or Tails !')}`;
-
-    // --- SFX (mini beep) ---
-    function beep(freq=700, duration=120){
-      try{
-        const ctx = new (window.AudioContext||window.webkitAudioContext)();
-        const o = ctx.createOscillator(); const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.type='triangle'; o.frequency.value=freq; g.gain.value=0.03;
-        o.start(); setTimeout(()=>{o.stop(); ctx.close()}, duration);
-      }catch(e){}
-    }
-
-    // --- Confetti (tiny) ---
-    function confettiFire(){
-      const N = 28;
-      const colors = ['#6ee3ff','#48ff9b','#b3f5ff','#d1ffe8','#dff8ff'];
-      for(let i=0;i<N;i++){
-        const p = document.createElement('div'); p.className='piece';
-        p.style.left = (Math.random()*100)+'vw';
-        p.style.top = '-5vh';
-        p.style.background = colors[Math.floor(Math.random()*colors.length)];
-        p.style.transform = `translateY(0) rotate(${Math.random()*360}deg)`;
-        p.style.animationDuration = (0.9 + Math.random()*0.9)+'s';
-        p.style.animationDelay = (Math.random()*0.1)+'s';
-        confettiWrap.appendChild(p);
-        setTimeout(()=>p.remove(), 1800);
-      }
-    }
-
-    // --- Coin animation + flip ---
-    function animateCoin(toSide){ // 'heads' or 'tails' final face up
-      // random spins + tilt
-      const turns = 2 + Math.floor(Math.random()*3); // 2..4 tours
-      const axis = Math.random() < 0.5 ? 'Y' : 'X';
-      const tilt = (Math.random()*18 - 9); // -9..9 deg
-      const finalRotation = (toSide === 'heads')
-        ? `rotate${axis}(${turns*180}deg) rotateZ(${tilt}deg)`
-        : `rotate${axis}(${turns*180 + 180}deg) rotateZ(${tilt}deg)`;
-      coinEl.style.transition = 'transform 1.15s cubic-bezier(.2,.7,.2,1)';
-      void coinEl.offsetWidth; // reflow
-      coinEl.style.transform = finalRotation;
-    }
-
-    function setBusy(v){
-      busy = v;
-      btnHeads.disabled = v; btnTails.disabled = v;
-    }
-
-    function flip(choice){
-      if (busy) return;
-      setBusy(true);
-      haptic('light');
-
-      // outcome random
-      const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
-
-      // spin coin
-      coinEl.classList.remove('win');
-      animateCoin(outcome);
-
-      // reveal after animation
-      setTimeout(()=>{
-        const win = (choice === outcome);
-        if (win){
-          score += 2;
-          coinEl.classList.add('win');
-          beep(950,110);
-          confettiFire();
-          haptic('medium');
-          resultEl.textContent = (outcome==='heads'?'🟦 HEADS (Bark)':'🟩 TAILS (Bite)')+' → +2 pts !';
-        } else {
-          beep(320,120);
-          haptic('light');
-          resultEl.textContent = (outcome==='heads'?'🟦 HEADS (Bark)':'🟩 TAILS (Bite)')+' → raté !';
-        }
-        updateHUD();
-        setTimeout(()=>setBusy(false), 350); // petit cooldown
-      }, 1180);
-    }
-
-    btnHeads.addEventListener('click', ()=>flip('heads'));
-    btnTails.addEventListener('click', ()=>flip('tails'));
-  </script>
+  btnH.addEventListener('click', ()=>flip('heads'));
+  btnT.addEventListener('click', ()=>flip('tails'));
+</script>
 </body>
 </html>
