@@ -1,0 +1,9 @@
+{
+  "projects": [
+    {
+      "name": "POMFlipHub",
+      "path": "./POMFlipHub.tact",
+      "output": "./build"
+    }
+  ]
+}

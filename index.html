@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>POM Flip — PvP Betting</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script type="module" src="./ton-utils.js"></script>
 <style>
   :root{
     --bg:#0b0f1a; --card:#121830; --ink:#e8f1ff; --muted:#a9b8ff;
@@ -115,7 +116,8 @@
     <!-- Mode Selection -->
     <div class="mode-selector">
       <button class="mode-btn active" onclick="setMode('solo')">Solo</button>
-      <button class="mode-btn" onclick="setMode('pvp')">PvP Bet</button>
+      <button class="mode-btn" onclick="setMode('pvp')">PvP Local</button>
+      <button class="mode-btn" onclick="setMode('onchain')">PvP On-Chain</button>
     </div>
 
     <!-- Solo Mode -->
@@ -198,6 +200,93 @@
       </div>
     </div>
 
+    <!-- On-Chain Mode -->
+    <div id="onchainMode" class="pvp-section">
+      <div class="card">
+        <div id="walletStatus" style="text-align:center; margin-bottom:16px; padding:12px; background:rgba(255,107,53,.1); border-radius:8px; border:1px solid var(--pom);">
+          <div id="walletAddress" style="color:var(--pom); font-weight:700;">Connectez votre wallet TON</div>
+          <button id="connectWallet" onclick="connectTONWallet()" style="margin-top:8px; padding:8px 16px; background:var(--pom); color:#fff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">
+            🔗 Connecter Wallet
+          </button>
+        </div>
+        
+        <div id="onchainBetSelector" style="display:none;">
+          <div class="pom-balance">
+            💰 TON Balance: <span id="tonBalance">0</span> TON
+          </div>
+          
+          <div class="bet-selector">
+            <div style="font-size:14px; font-weight:700; margin-bottom:8px;">Mise (TON):</div>
+            <div class="bet-amounts">
+              <button class="bet-btn" onclick="setOnchainBet(0.01)">0.01 TON</button>
+              <button class="bet-btn" onclick="setOnchainBet(0.05)">0.05 TON</button>
+              <button class="bet-btn" onclick="setOnchainBet(0.1)">0.1 TON</button>
+              <button class="bet-btn" onclick="setOnchainBet(0.5)">0.5 TON</button>
+              <button class="bet-btn" onclick="setOnchainBet(1)">1 TON</button>
+              <button class="bet-btn" onclick="setOnchainBet(5)">5 TON</button>
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button id="createOnchainMatch" onclick="createOnchainMatch()">🎮 Créer un match</button>
+            <button id="joinOnchainMatch" onclick="showJoinInterface()">🔍 Rejoindre un match</button>
+          </div>
+        </div>
+
+        <div id="joinInterface" style="display:none;">
+          <div style="margin-bottom:12px;">
+            <input type="number" id="matchIdInput" placeholder="ID du match" style="width:100%; padding:12px; border:none; border-radius:8px; background:var(--btn2); color:var(--ink); font-size:16px;">
+          </div>
+          <div class="buttons">
+            <button onclick="joinOnchainMatch()">🚀 Rejoindre</button>
+            <button onclick="hideJoinInterface()" class="b2">❌ Annuler</button>
+          </div>
+        </div>
+
+        <div id="onchainGameRoom" style="display:none;">
+          <div style="text-align:center; margin-bottom:12px; font-weight:700; color:var(--pom);">
+            Match #<span id="currentMatchId">0</span>
+          </div>
+          
+          <div class="players">
+            <div class="player">
+              <div class="player-name" id="onchainPlayer1">Vous</div>
+              <div class="player-bet" id="onchainBet1">0 TON</div>
+              <div class="player-choice" id="onchainChoice1">—</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="player">
+              <div class="player-name" id="onchainPlayer2">Adversaire</div>
+              <div class="player-bet" id="onchainBet2">0 TON</div>
+              <div class="player-choice" id="onchainChoice2">—</div>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div id="onchainCoin" class="coin" aria-live="polite">
+              <div class="face front" aria-label="Heads">🐕</div>
+              <div class="face back" aria-label="Tails">🦴</div>
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button id="onchainBtnH" onclick="makeOnchainChoice('heads')">Heads (Bark 🐕)</button>
+            <button id="onchainBtnT" class="b2" onclick="makeOnchainChoice('tails')">Tails (Bite 🦴)</button>
+          </div>
+
+          <div id="onchainStatus" style="text-align:center; margin-top:10px; font-weight:700; color:var(--muted);">
+            En attente...
+          </div>
+
+          <div class="buttons" style="margin-top:12px;">
+            <button onclick="revealOnchainSeed()" id="revealBtn" style="display:none;">🔓 Révéler</button>
+            <button onclick="cancelOnchainMatch()" id="cancelBtn" style="display:none;">❌ Annuler</button>
+            <button onclick="claimOnchainForfeit()" id="claimBtn" style="display:none;">💰 Récupérer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer>POM Flip PvP • Misez vos POM et gagnez!</footer>
   </div>
 
@@ -243,10 +332,13 @@
     
     document.getElementById('soloMode').style.display = mode === 'solo' ? 'block' : 'none';
     document.getElementById('pvpMode').style.display = mode === 'pvp' ? 'block' : 'none';
+    document.getElementById('onchainMode').style.display = mode === 'onchain' ? 'block' : 'none';
     document.getElementById('gameRoom').classList.toggle('active', false);
     
     if (mode === 'pvp') {
       updatePomBalance();
+    } else if (mode === 'onchain') {
+      checkWalletConnection();
     }
   }
 
@@ -457,6 +549,290 @@
 
   btnH.addEventListener('click', ()=>flip('heads'));
   btnT.addEventListener('click', ()=>flip('tails'));
+
+  // --- On-Chain Functions ---
+  let onchainBet = 0;
+  let currentMatchId = null;
+  let onchainGameState = 'idle'; // idle, created, joined, revealing, resolved
+  let onchainMyChoice = null;
+
+  async function checkWalletConnection() {
+    try {
+      const isConnected = await isConnected();
+      if (isConnected) {
+        const address = await getUserAddress();
+        document.getElementById('walletAddress').textContent = `Connecté: ${address.slice(0, 8)}...`;
+        document.getElementById('connectWallet').style.display = 'none';
+        document.getElementById('onchainBetSelector').style.display = 'block';
+        await updateTONBalance();
+      } else {
+        document.getElementById('walletAddress').textContent = 'Connectez votre wallet TON';
+        document.getElementById('connectWallet').style.display = 'block';
+        document.getElementById('onchainBetSelector').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Wallet check failed:', error);
+    }
+  }
+
+  async function connectTONWallet() {
+    try {
+      const connected = await connectWallet();
+      if (connected) {
+        await checkWalletConnection();
+        toastMsg('🔗 Wallet connecté!', 'ok');
+      } else {
+        toastMsg('❌ Échec de connexion', 'warn');
+      }
+    } catch (error) {
+      console.error('Connection failed:', error);
+      toastMsg('❌ Erreur de connexion', 'warn');
+    }
+  }
+
+  async function updateTONBalance() {
+    try {
+      // In a real app, you'd query the TON blockchain
+      // For now, we'll simulate a balance
+      const balance = 10.5; // Simulated balance
+      document.getElementById('tonBalance').textContent = balance.toFixed(2);
+    } catch (error) {
+      console.error('Balance update failed:', error);
+    }
+  }
+
+  function setOnchainBet(amount) {
+    onchainBet = amount;
+    document.querySelectorAll('#onchainBetSelector .bet-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    toastMsg(`Mise: ${amount} TON`, 'pom');
+  }
+
+  async function createOnchainMatch() {
+    if (onchainBet === 0) {
+      toastMsg('💰 Choisissez une mise d\'abord!', 'warn');
+      return;
+    }
+
+    try {
+      toastMsg('🎮 Création du match...', '');
+      
+      // Generate seed and commit
+      const seed = generateSeed();
+      const commit = await calculateCommit(seed);
+      
+      // Store seed for later reveal
+      const matchId = Date.now();
+      localStorage.setItem(`onchain_seed_${matchId}`, JSON.stringify(Array.from(seed)));
+      
+      // Create match on blockchain
+      const betAmount = parseTON(onchainBet);
+      const result = await createMatch(betAmount);
+      
+      currentMatchId = matchId;
+      onchainGameState = 'created';
+      
+      // Show game room
+      document.getElementById('onchainBetSelector').style.display = 'none';
+      document.getElementById('onchainGameRoom').style.display = 'block';
+      document.getElementById('currentMatchId').textContent = matchId;
+      document.getElementById('onchainBet1').textContent = `${onchainBet} TON`;
+      document.getElementById('onchainStatus').textContent = 'En attente d\'un adversaire...';
+      document.getElementById('cancelBtn').style.display = 'block';
+      
+      toastMsg(`🎮 Match créé! ID: ${matchId}`, 'ok');
+      haptic('medium');
+      
+    } catch (error) {
+      console.error('Create match failed:', error);
+      toastMsg('❌ Échec de création du match', 'warn');
+    }
+  }
+
+  function showJoinInterface() {
+    document.getElementById('onchainBetSelector').style.display = 'none';
+    document.getElementById('joinInterface').style.display = 'block';
+  }
+
+  function hideJoinInterface() {
+    document.getElementById('joinInterface').style.display = 'none';
+    document.getElementById('onchainBetSelector').style.display = 'block';
+  }
+
+  async function joinOnchainMatch() {
+    const matchId = parseInt(document.getElementById('matchIdInput').value);
+    if (!matchId) {
+      toastMsg('💰 Entrez un ID de match valide!', 'warn');
+      return;
+    }
+
+    try {
+      toastMsg('🚀 Rejoindre le match...', '');
+      
+      // Generate seed and commit
+      const seed = generateSeed();
+      const commit = await calculateCommit(seed);
+      
+      // Store seed for later reveal
+      localStorage.setItem(`onchain_seed_${matchId}`, JSON.stringify(Array.from(seed)));
+      
+      // Join match on blockchain
+      const betAmount = parseTON(onchainBet);
+      const result = await joinMatch(matchId, betAmount);
+      
+      currentMatchId = matchId;
+      onchainGameState = 'joined';
+      
+      // Show game room
+      document.getElementById('joinInterface').style.display = 'none';
+      document.getElementById('onchainGameRoom').style.display = 'block';
+      document.getElementById('currentMatchId').textContent = matchId;
+      document.getElementById('onchainBet2').textContent = `${onchainBet} TON`;
+      document.getElementById('onchainStatus').textContent = 'Choisissez votre côté!';
+      
+      toastMsg(`🚀 Match rejoint!`, 'ok');
+      haptic('medium');
+      
+    } catch (error) {
+      console.error('Join match failed:', error);
+      toastMsg('❌ Échec de rejoindre le match', 'warn');
+    }
+  }
+
+  async function makeOnchainChoice(choice) {
+    if (onchainGameState !== 'joined') return;
+    
+    onchainMyChoice = choice;
+    document.getElementById('onchainChoice1').textContent = choice === 'heads' ? '🐕' : '🦴';
+    document.getElementById('onchainBtnH').disabled = true;
+    document.getElementById('onchainBtnT').disabled = true;
+    document.getElementById('onchainStatus').textContent = 'En attente de l\'adversaire...';
+    
+    // Simulate opponent choice (in real app, this would come from blockchain events)
+    setTimeout(async () => {
+      const opponentChoice = Math.random() < 0.5 ? 'heads' : 'tails';
+      document.getElementById('onchainChoice2').textContent = opponentChoice === 'heads' ? '🐕' : '🦴';
+      document.getElementById('onchainStatus').textContent = 'Lancement de la pièce...';
+      
+      setTimeout(() => {
+        flipOnchainCoin();
+      }, 1000);
+    }, 2000);
+    
+    haptic('light');
+  }
+
+  function flipOnchainCoin() {
+    onchainGameState = 'revealing';
+    const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+    
+    // Animation de la pièce
+    const onchainCoin = document.getElementById('onchainCoin');
+    spinIndex++;
+    const baseTurns = 2 + Math.floor(Math.random()*2);
+    const tilt = (Math.random()*10 - 5);
+    const finalRotation = outcome === 'tails' ? 180 : 0;
+    const deg = baseTurns*180 + finalRotation + spinIndex*360;
+    
+    onchainCoin.style.transition = 'transform 900ms cubic-bezier(.22,.8,.2,1)';
+    void onchainCoin.offsetWidth;
+    onchainCoin.style.transform = `rotateY(${deg}deg) rotateZ(${tilt}deg)`;
+    
+    // Show reveal button
+    document.getElementById('revealBtn').style.display = 'block';
+    document.getElementById('onchainStatus').textContent = 'Révélez votre seed pour finaliser!';
+    
+    // Store outcome for reveal
+    localStorage.setItem(`onchain_outcome_${currentMatchId}`, outcome);
+  }
+
+  async function revealOnchainSeed() {
+    try {
+      toastMsg('🔓 Révélation du seed...', '');
+      
+      const result = await revealSeed(currentMatchId);
+      
+      // Simulate resolution (in real app, this would come from blockchain events)
+      setTimeout(() => {
+        const outcome = localStorage.getItem(`onchain_outcome_${currentMatchId}`);
+        const iWon = (onchainMyChoice === outcome);
+        
+        if (iWon) {
+          toastMsg(`🎉 VICTOIRE! +${onchainBet * 2} TON`, 'ok');
+          haptic('heavy');
+        } else {
+          toastMsg(`😔 DÉFAITE! -${onchainBet} TON`, 'warn');
+          haptic('light');
+        }
+        
+        document.getElementById('onchainStatus').textContent = `${iWon ? 'VICTOIRE' : 'DÉFAITE'} - ${outcome === 'heads' ? 'HEADS' : 'TAILS'}`;
+        onchainGameState = 'resolved';
+        
+        // Clean up
+        localStorage.removeItem(`onchain_seed_${currentMatchId}`);
+        localStorage.removeItem(`onchain_outcome_${currentMatchId}`);
+        
+        // Return to menu after 3 seconds
+        setTimeout(() => {
+          resetOnchainGame();
+        }, 3000);
+        
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Reveal failed:', error);
+      toastMsg('❌ Échec de révélation', 'warn');
+    }
+  }
+
+  async function cancelOnchainMatch() {
+    if (onchainGameState !== 'created') return;
+    
+    try {
+      toastMsg('❌ Annulation du match...', '');
+      
+      const result = await cancelMatch(currentMatchId);
+      
+      toastMsg('✅ Match annulé, fonds récupérés', 'ok');
+      resetOnchainGame();
+      
+    } catch (error) {
+      console.error('Cancel failed:', error);
+      toastMsg('❌ Échec d\'annulation', 'warn');
+    }
+  }
+
+  async function claimOnchainForfeit() {
+    try {
+      toastMsg('💰 Récupération des fonds...', '');
+      
+      const result = await claimForfeit(currentMatchId);
+      
+      toastMsg('✅ Fonds récupérés!', 'ok');
+      resetOnchainGame();
+      
+    } catch (error) {
+      console.error('Claim failed:', error);
+      toastMsg('❌ Échec de récupération', 'warn');
+    }
+  }
+
+  function resetOnchainGame() {
+    onchainGameState = 'idle';
+    currentMatchId = null;
+    onchainMyChoice = null;
+    
+    document.getElementById('onchainGameRoom').style.display = 'none';
+    document.getElementById('onchainBetSelector').style.display = 'block';
+    document.getElementById('onchainChoice1').textContent = '—';
+    document.getElementById('onchainChoice2').textContent = '—';
+    document.getElementById('onchainBtnH').disabled = false;
+    document.getElementById('onchainBtnT').disabled = false;
+    document.getElementById('revealBtn').style.display = 'none';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('claimBtn').style.display = 'none';
+    document.getElementById('onchainStatus').textContent = 'En attente...';
+  }
 
   // Initialize
   updatePomBalance();
