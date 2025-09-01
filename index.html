@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POM Flip — Bark or Bite</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 0; background:#0f1220; color:#fff; display:flex; min-height:100vh; align-items:center; justify-content:center; }
+    .card { width: 360px; background:#171a2f; padding:24px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+    h1 { margin:0 0 16px; font-size:22px; }
+    .subtitle { color:#b9c0ff; margin-bottom:18px; }
+    .btns { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }
+    button { padding:14px; border:none; border-radius:12px; font-weight:700; cursor:pointer; background:#2a2e57; color:#fff; }
+    button:hover { filter:brightness(1.05); }
+    .heads { background:#2d8fdd; }
+    .tails { background:#6cc36c; }
+    .result { margin-top:10px; padding:12px; background:#11142a; border-radius:10px; min-height:48px; }
+    .score { margin-top:10px; color:#a6ffb0; font-weight:700; }
+    .footer { margin-top:16px; font-size:12px; color:#9aa3ff; opacity:.9 }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🐶 POM Flip — Bark or Bite</h1>
+    <div class="subtitle">Choisis : <b>Heads = Bark 🐕</b> • <b>Tails = Bite 🦴</b></div>
+
+    <div class="btns">
+      <button class="heads" onclick="flip('heads')">Heads (Bark 🐕)</button>
+      <button class="tails" onclick="flip('tails')">Tails (Bite 🦴)</button>
+    </div>
+
+    <div class="result" id="result">Clique pour lancer le flip…</div>
+    <div class="score" id="score"></div>
+    <div class="footer">Tip: partage le lien à tes amis pour monter le score 💚</div>
+  </div>
+
+  <script>
+    // Score local (sur l'appareil)
+    const scoreEl = document.getElementById('score');
+    const resultEl = document.getElementById('result');
+    let score = parseInt(localStorage.getItem('pomflip_score') || '0', 10);
+    updateScore();
+
+    function updateScore() {
+      scoreEl.textContent = "Ton score: " + score + " pts";
+      localStorage.setItem('pomflip_score', String(score));
+    }
+
+    function flip(choice) {
+      // tirage simple: 0=heads, 1=tails
+      const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+      const win = outcome === choice;
+      if (win) {
+        score += 2; // +2 si bon choix
+        resultEl.textContent = (outcome === 'heads' ? "🟦 HEADS (Bark)" : "🟩 TAILS (Bite)") + " → Tu gagnes +2 pts !";
+      } else {
+        resultEl.textContent = (outcome === 'heads' ? "🟦 HEADS (Bark)" : "🟩 TAILS (Bite)") + " → Raté cette fois…";
+      }
+      updateScore();
+    }
+  </script>
+</body>
+</html>
